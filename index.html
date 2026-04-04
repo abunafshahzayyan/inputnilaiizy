@@ -1562,7 +1562,30 @@ function renderInputTab(type) {
       <button class="btn" id="btnSimpan" style="flex:1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer;">SIMPAN NILAI</button>
     </div>
   `;
-  
+
+  // --- LOGIKA FILTER REAL-TIME ---
+  const filterKelas = document.getElementById('filterKelasInput');
+  const searchInput = document.getElementById('quickSearchSantri');
+
+  const updateDisplay = () => {
+    const kelasVal = filterKelas.value;
+    const searchVal = searchInput.value.toLowerCase();
+    
+    // Filter data dari cache
+    const filteredData = santriCache.filter(s => {
+      const matchKelas = (kelasVal === 'SEMUA' || (s.kelas || "Tanpa Kelas") === kelasVal);
+      const matchSearch = s.name.toLowerCase().includes(searchVal);
+      return matchKelas && matchSearch;
+    });
+
+    // Render ulang hanya bagian list santri
+    document.getElementById('santriList').innerHTML = renderSantriRows(filteredData);
+  };
+
+  filterKelas.addEventListener('change', updateDisplay);
+  searchInput.addEventListener('input', updateDisplay);
+
+  // --- REST OF LISTENERS ---
   if (typeof setupInputListeners === 'function') {
     setupInputListeners(); 
   }
@@ -1575,8 +1598,16 @@ function renderInputTab(type) {
 
 // Fungsi pembantu agar index tetap urut 0, 1, 2... meskipun list difilter
 function renderSantriRows(data) {
+  if (data.length === 0) {
+    return `<div style="padding:20px; text-align:center; color:#999;">Data santri tidak ditemukan</div>`;
+  }
+  
   return data.map((s, idx) => `
-    <div class="santri-row" data-id="${s.id}" data-kelas="${s.kelas || 'Tanpa Kelas'}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee;">
+    <div class="santri-row" 
+         data-id="${s.id}" 
+         data-name="${escapeHtml(s.name.toLowerCase())}"
+         data-kelas="${s.kelas || 'Tanpa Kelas'}" 
+         style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee;">
       <div style="flex:1">
         <strong class="santri-name">${escapeHtml(s.name)}</strong><br>
         <small style="color:#666">Kelas: ${escapeHtml(s.kelas || '-')}</small>
@@ -1585,13 +1616,15 @@ function renderSantriRows(data) {
         <input type="number" 
                class="input-score" 
                data-id="${s.id}" 
-               data-index="${idx}" 
+               data-nama-santri="${escapeHtml(s.name)}"
+               data-kelas-santri="${escapeHtml(s.kelas || '-')}"
                placeholder="0" 
                min="0" max="100"
                style="width:100%; padding:8px; border-radius:8px; border:1px solid #ddd;">
       </div>
     </div>
   `).join('');
+
 
 
 
